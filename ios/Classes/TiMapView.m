@@ -15,6 +15,12 @@
 #import "TiMapCustomAnnotationView.h"
 #import "TiMapRouteProxy.h"
 
+@interface TiMapView (_ClickHandler_) <UIGestureRecognizerDelegate>
+
+@end
+
+
+
 @implementation TiMapView
 
 #pragma mark Internal
@@ -71,9 +77,37 @@
         mapLine2View = CFDictionaryCreateMutable(NULL, 10, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
         //Initialize loaded state to YES. This will automatically go to NO if the map needs to download new data
         loaded = YES;
+        
+        UITapGestureRecognizer *clickRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+        clickRecognizer.delegate = self;
+        [map addGestureRecognizer:clickRecognizer];
+        [clickRecognizer release];
     }
     return map;
 }
+
+
+- (void)handleTap:(UITapGestureRecognizer *)recognizer {
+    if (recognizer.state == UIGestureRecognizerStateEnded) {
+        
+        CGPoint point = [recognizer locationInView: self];
+        
+        id<MKAnnotation> hitAnnotation = [self wasHitOnAnnotation:point inView:self];
+        
+        if (!hitAnnotation) {
+            return;
+        }
+        
+        [self fireClickEvent:[self mapView:map viewForAnnotation:hitAnnotation] source:nil];
+    }
+}
+
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
+{
+    return YES;
+}
+
 
 - (id)accessibilityElement
 {
